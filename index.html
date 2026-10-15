@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ประวัติการรับทุนการศึกษา - โรงเรียนบ้านสันดาบ</title>
+  
+  <!-- Favicon using School Logo -->
+  <link rel="icon" type="image/png" href="ตราโรงเรียน.png">
+  
+  <!-- Google Fonts: Prompt (UI) & Sarabun (Formal Thai Print) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- html2pdf.js for client-side PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <!-- SheetJS (xlsx) for client-side Excel reading and parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-wrapper">
+    
+    <!-- ====================================================================
+         1. แถบบนสุด: ซ้าย=ชื่อ "ระบบทุนการศึกษาโรงเรียนบ้านสันดาบ", ขวา=ปีการศึกษา
+         ==================================================================== -->
+    <header class="system-top-header">
+      <div class="system-name-title">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>ระบบทุนการศึกษาโรงเรียนบ้านสันดาบ</span>
+      </div>
+
+      <!-- ด้านขวาในแถบเดียวกัน เป็นปีการศึกษา -->
+      <div class="year-selector-group">
+        <label for="academicYearSelect" class="year-label">
+          <i class="fa-regular fa-calendar-check" style="color: var(--primary);"></i>
+          <span>ปีการศึกษา:</span>
+        </label>
+        <select id="academicYearSelect" class="year-select-dropdown">
+          <!-- Populated dynamically via JS: 2569 - 2580 -->
+        </select>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         2. ส่วน Logo และระบบที่กำหนดไว้
+         ==================================================================== -->
+    <section class="header-hero">
+      <div class="logo-container">
+        <img src="ตราโรงเรียน.png" alt="ตราสัญลักษณ์โรงเรียนบ้านสันดาบ" class="school-logo">
+      </div>
+      <h1 class="main-title">ประวัติการรับทุนการศึกษา</h1>
+      <h2 class="school-name">โรงเรียนบ้านสันดาบ</h2>
+      <div class="academic-year-badge-wrapper">
+        <div class="academic-year-display" id="academicYearDisplay">
+          <i class="fa-solid fa-graduation-cap"></i> ปีการศึกษา 2569
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         3. ปุ่มเรียงลำดับ [บันทึกทุนการศึกษา] [ข้อมูลนักเรียน] [ดาวน์โหลด] [พิมพ์] (อยู่ก่อนค้นหา)
+         ==================================================================== -->
+    <section class="action-bar-row">
+      <div class="main-action-buttons">
+        <!-- 1. บันทึกทุนการศึกษา -->
+        <button type="button" class="btn btn-primary-record" id="btnOpenRecord" title="บันทึกข้อมูลทุนการศึกษา (ต้องใส่รหัส thunsandab1234)">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>บันทึกทุนการศึกษา</span>
+        </button>
+
+        <!-- 2. ข้อมูลนักเรียน -->
+        <button type="button" class="btn btn-database-stu" id="btnOpenStudents" title="จัดการข้อมูลนักเรียน">
+          <i class="fa-solid fa-user-graduate"></i>
+          <span>ข้อมูลนักเรียน</span>
+        </button>
+
+        <!-- 3. ดาวน์โหลด -->
+        <button type="button" class="btn btn-pdf" id="btnDownloadPdf" title="ดาวน์โหลดตารางประวัติเป็นไฟล์ PDF">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>ดาวน์โหลด</span>
+        </button>
+
+        <!-- 4. พิมพ์ -->
+        <button type="button" class="btn btn-print" id="btnPrint" title="พิมพ์ประวัติการรับทุนที่กำลังแสดงผล">
+          <i class="fa-solid fa-print"></i>
+          <span>พิมพ์</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         Search & Filter Area (ด้านล่างปุ่ม)
+         ==================================================================== -->
+    <section class="filter-panel">
+      <div class="filter-panel-header">
+        <h3 class="filter-title">
+          <i class="fa-solid fa-filter" style="color: var(--primary);"></i>
+          <span>ค้นหาและกรองข้อมูลทุนการศึกษา</span>
+        </h3>
+        <button type="button" class="btn-reset-filter" id="btnResetFilter" title="ล้างเงื่อนไขการค้นหาทั้งหมด">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>รีเซ็ตตัวกรอง</span>
+        </button>
+      </div>
+
+      <div class="filter-controls-grid filter-grid-two-cols">
+        <!-- 1. ระดับชั้น (Dropbox ให้เลือก) -->
+        <div class="filter-group">
+          <label for="filterGrade">
+            <i class="fa-solid fa-layer-group" style="color: #64748b;"></i>
+            <span>ระดับชั้น:</span>
+          </label>
+          <select id="filterGrade" class="form-select">
+            <option value="">ทุกระดับชั้น</option>
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <!-- 2. ชื่อ-นามสกุลนักเรียน (Dropbox ให้เลือก แสดงเฉพาะนักเรียนในระดับชั้นที่กำลังเลือก) -->
+        <div class="filter-group">
+          <label for="filterStudent">
+            <i class="fa-solid fa-user" style="color: #64748b;"></i>
+            <span>ชื่อ-นามสกุลนักเรียน:</span>
+          </label>
+          <select id="filterStudent" class="form-select">
+            <option value="">นักเรียนทั้งหมด</option>
+            <!-- Populated dynamically when Grade changes -->
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         5. ตารางประวัติการรับทุนการศึกษา (ยอดรวมแสดงใต้ตารางรวมกับตาราง)
+         ==================================================================== -->
+    <section class="table-card" id="printableTableSection">
+      <div class="table-card-header">
+        <h3 class="table-card-title">
+          <i class="fa-solid fa-table-list" style="color: var(--primary);"></i>
+          <span>รายการประวัติการรับทุนการศึกษา</span>
+        </h3>
+        <span class="record-count-badge" id="tableRecordCount">0 รายการ</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table" id="scholarshipDataTable">
+          <thead>
+            <tr>
+              <th class="text-center col-seq" style="width: 60px;">ลำดับ</th>
+              <th class="text-center col-date" style="width: 110px;">วัน/เดือน/ปี</th>
+              <th class="col-name">ชื่อ-นามสกุลนักเรียน</th>
+              <th class="text-right col-amount" style="width: 130px;">ยอดเงิน (บาท)</th>
+              <th class="col-org">หน่วยงาน</th>
+              <th class="text-center col-note" style="width: 80px;">หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody id="scholarshipTableBody">
+            <!-- Data rows injected dynamically by app.js -->
+          </tbody>
+          <tfoot id="scholarshipTableFoot">
+            <tr class="table-total-row">
+              <td colspan="3" class="total-label-cell" id="tableTotalLabel">
+                <strong>ยอดรวมเงินทุนการศึกษาทั้งหมด</strong> <span class="total-year-label" id="tableTotalYearLabel"></span>
+              </td>
+              <td class="text-right total-amount-cell" id="tableTotalAmount">
+                0.00 บาท
+              </td>
+              <td colspan="2" class="total-empty-cell"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- Official Print Signatures Area (Visible only when printed or exported) -->
+    <div class="print-signatures" style="display: none;">
+      <div class="sig-grid">
+        <div class="sig-col">
+          <p>ลงชื่อ ............................................................ ผู้รายงาน</p>
+          <p>( ............................................................ )</p>
+          <p>ครูผู้รับผิดชอบงานทุนการศึกษา โรงเรียนบ้านสันดาบ</p>
+        </div>
+        <div class="sig-col">
+          <p>ลงชื่อ ............................................................ ผู้รับรอง</p>
+          <p>( ............................................................ )</p>
+          <p>ผู้อำนวยการโรงเรียนบ้านสันดาบ</p>
+        </div>
+      </div>
+    <!-- System Footer & Settings Link -->
+    <footer class="app-footer">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; max-width: 1200px; margin: 0 auto; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+        <span><i class="fa-solid fa-graduation-cap" style="color: var(--primary);"></i> ระบบทุนการศึกษา โรงเรียนบ้านสันดาบ &bull; ตรวจสอบและเพิ่มแถว Google Sheet อัตโนมัติ</span>
+        <button type="button" class="btn-footer-settings" id="btnOpenSettings" title="ตั้งค่าการเชื่อมต่อ Google Apps Script Web App" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #fff; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); color: #475569; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
+          <i class="fa-solid fa-gear" style="color: var(--primary);"></i> <span>ตั้งค่าเชื่อมต่อ Google Sheet API</span>
+        </button>
+      </div>
+    </footer>
+
+  </div> <!-- End App Wrapper -->
+
+  <!-- ====================================================================
+       1. Password Authentication Modal (รหัสผ่าน: thunsandab1234)
+       ==================================================================== -->
+  <div class="modal-overlay" id="passwordModal">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i>
+          <span>ยืนยันสิทธิ์การบันทึกข้อมูล</span>
+        </h3>
+        <button type="button" class="btn-close-modal" id="btnClosePasswordModal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="password-box">
+          <div class="password-icon-wrapper">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h4 style="font-size: 1.1rem; color: var(--secondary); margin-bottom: 6px;">ระบบรักษาความปลอดภัย</h4>
+          <p style="font-size: 0.88rem; color: #64748b;">กรุณากรอกรหัสผ่านเพื่อเข้าใช้งานฟอร์มบันทึกทุนการศึกษา</p>
+          
+          <div class="password-input-group">
+            <input type="password" id="passwordInput" class="form-input" placeholder="กรอกรหัสผ่าน..." autocomplete="off">
+            <button type="button" class="toggle-password-btn" id="btnTogglePassword" title="แสดง/ซ่อนรหัสผ่าน">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+          <div class="password-error-msg" id="passwordErrorMsg">
+            <i class="fa-solid fa-circle-exclamation"></i> รหัสผ่านไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">ยกเลิก</button>
+        <button type="button" class="btn btn-primary-record" id="btnConfirmPassword">
+          <i class="fa-solid fa-key"></i> ยืนยันรหัสผ่าน
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       2. Record Scholarship Modal (ระบบบันทึกทุนการศึกษา โรงเรียนบ้านสันดาบ)
+       ==================================================================== -->
+  <div class="modal-overlay" id="recordModal">
+    <div class="modal-dialog modal-large" style="max-width: 1050px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-file-signature" style="color: var(--primary);"></i>
+          <span>ระบบบันทึกทุนการศึกษา โรงเรียนบ้านสันดาบ</span>
+        </h3>
+        <button type="button" class="btn-close-modal" id="btnCloseRecordModal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px;">
+        <!-- ฟอร์มบันทึก / แก้ไขข้อมูลทุนการศึกษา -->
+        <form id="recordForm">
+          <input type="hidden" id="editRecordId" value="">
+          
+          <div class="form-grid">
+            <!-- 1. วันที่บันทึก (เลือก วัน/เดือน/ปี) -->
+            <div class="form-field">
+              <label for="recordDate">
+                <i class="fa-regular fa-calendar-days" style="color: var(--primary);"></i>
+                <span>วันที่บันทึก <span class="req">*</span></span>
+              </label>
+              <input type="date" id="recordDate" class="form-input" required>
+            </div>
+
+            <!-- ปีการศึกษา -->
+            <div class="form-field">
+              <label for="recordYear">
+                <i class="fa-solid fa-graduation-cap" style="color: var(--primary);"></i>
+                <span>ปีการศึกษา <span class="req">*</span></span>
+              </label>
+              <select id="recordYear" class="form-select" required>
+                <!-- Populated via JS -->
+              </select>
+            </div>
+
+            <!-- 2. ระดับชั้น (Dropbox ให้เลือก) -->
+            <div class="form-field">
+              <label for="recordGrade">
+                <i class="fa-solid fa-layer-group" style="color: var(--primary);"></i>
+                <span>ระดับชั้น <span class="req">*</span></span>
+              </label>
+              <select id="recordGrade" class="form-select" required>
+                <!-- Populated via JS -->
+              </select>
+            </div>
+
+            <!-- 3. ชื่อ-นามสกุลนักเรียน (Dropbox ให้เลือก โดยเมื่อเลือกระดับชั้น จะแสดงแค่ชื่อนักเรียนในระดับชั้นที่เลือกเท่านั้น) -->
+            <div class="form-field">
+              <label for="recordStudent">
+                <i class="fa-solid fa-user-graduate" style="color: var(--primary);"></i>
+                <span>ชื่อ-นามสกุลนักเรียน <span class="req">*</span></span>
+              </label>
+              <select id="recordStudent" class="form-select" required disabled>
+                <option value="" disabled selected>-- กรุณาเลือกระดับชั้นก่อน --</option>
+              </select>
+            </div>
+
+            <!-- 4. จำนวนเงิน (ช่องกรอกข้อมูล) -->
+            <div class="form-field full-width">
+              <label for="recordAmount">
+                <i class="fa-solid fa-coins" style="color: var(--primary);"></i>
+                <span>จำนวนเงิน (บาท) <span class="req">*</span></span>
+              </label>
+              <input type="number" id="recordAmount" class="form-input" placeholder="เช่น 1000, 1500, 2000" min="1" step="0.5" required>
+              
+              <!-- Quick Preset Amount Chips -->
+              <div class="amount-presets">
+                <span class="preset-chip" data-amount="500">500 บาท</span>
+                <span class="preset-chip" data-amount="1000">1,000 บาท</span>
+                <span class="preset-chip" data-amount="1500">1,500 บาท</span>
+                <span class="preset-chip" data-amount="2000">2,000 บาท</span>
+                <span class="preset-chip" data-amount="2100">2,100 บาท</span>
+                <span class="preset-chip" data-amount="3000">3,000 บาท</span>
+                <span class="preset-chip" data-amount="5000">5,000 บาท</span>
+                <span class="preset-chip" data-amount="10000">10,000 บาท</span>
+              </div>
+            </div>
+
+            <!-- 5. หน่วยงาน (กรอกข้อมูล) -->
+            <div class="form-field full-width">
+              <label for="recordOrg">
+                <i class="fa-solid fa-building-columns" style="color: var(--primary);"></i>
+                <span>หน่วยงาน / แหล่งทุนผู้มอบ <span class="req">*</span></span>
+              </label>
+              <input type="text" id="recordOrg" class="form-input" list="orgSuggestions" placeholder="เช่น ทุนอุดหนุนยากจนพิเศษ กสศ., มูลนิธิ..." required>
+              <datalist id="orgSuggestions">
+                <option value="ทุนอุดหนุนยากจนพิเศษ กสศ.">
+                <option value="ทุนบริษัท บี แอล แอล อินเตอร์เนชั่นแนล จำกัด (BLL)">
+                <option value="ทุนการศึกษาของเหล่ากาชาดจังหวัดสมุทรสาคร">
+                <option value="กองทุนเพื่อความเสมอภาคทางการศึกษา (กสศ.)">
+                <option value="มูลนิธิการศึกษาเพื่อชนบท">
+                <option value="ชมรมศิษย์เก่าโรงเรียนบ้านสันดาบ">
+                <option value="ทุนผู้ใหญ่ใจดีประจำตำบล">
+              </datalist>
+            </div>
+
+            <!-- 6. หมายเหตุ (กรอกข้อมูล ไม่บังคับกรอก) -->
+            <div class="form-field full-width">
+              <label for="recordNote">
+                <i class="fa-regular fa-comment-dots" style="color: #64748b;"></i>
+                <span>หมายเหตุ (ไม่บังคับกรอก)</span>
+              </label>
+              <input type="text" id="recordNote" class="form-input" placeholder="เช่น ทุนนักเรียนยากจนพิเศษ ภาคเรียนที่ 1">
+            </div>
+          </div>
+
+          <div class="record-form-actions" style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 24px;">
+            <button type="button" class="btn btn-secondary" id="btnResetRecordForm" style="display: none;">
+              <i class="fa-solid fa-rotate-left"></i> ยกเลิกการแก้ไข
+            </button>
+            <button type="submit" class="btn btn-primary-record" id="btnSaveRecord">
+              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลทุนการศึกษา
+            </button>
+          </div>
+        </form>
+
+        <!-- ====================================================================
+             ประวัติการรับทุนการศึกษา (แสดงด้านล่างเมื่อเข้าระบบ พร้อมปุ่มแก้ไข และ ลบ ในช่องจัดการ)
+             ==================================================================== -->
+        <div style="border-top: 2px solid var(--border-color); padding-top: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary); display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-table-list" style="color: var(--primary);"></i>
+              <span>ประวัติการรับทุนการศึกษา (จัดการ แก้ไข/ลบ ข้อมูล)</span>
+            </h4>
+            <span class="record-count-badge" id="modalRecordCount">0 รายการ</span>
+          </div>
+
+          <div class="table-responsive" style="max-height: 340px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="text-center col-seq" style="width: 60px;">ลำดับ</th>
+                  <th class="text-center col-date" style="width: 110px;">วัน/เดือน/ปี</th>
+                  <th class="col-name">ชื่อ-นามสกุลนักเรียน</th>
+                  <th class="text-right col-amount" style="width: 125px;">ยอดเงิน (บาท)</th>
+                  <th class="col-org">หน่วยงาน</th>
+                  <th class="text-center col-note" style="width: 80px;">หมายเหตุ</th>
+                  <th class="text-center col-action" style="width: 130px;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="modalScholarshipTableBody">
+                <!-- Data rows with [แก้ไข] and [ลบ] injected by app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="background: #faf5ff;">
+        <button type="button" class="btn btn-secondary" onclick="closeRecordModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       3. Manage Students Modal (จัดการข้อมูลนักเรียน ตามภาพแนบ)
+       ==================================================================== -->
+  <div class="modal-overlay" id="studentsModal">
+    <div class="modal-dialog modal-large" style="max-width: 1050px; padding: 0; overflow: hidden;">
+      
+      <!-- Red Header Banner -->
+      <div class="student-manage-header">
+        <div class="header-left">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>จัดการข้อมูลนักเรียน</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="academic-year-tag" id="studentManageYearTag">ปีการศึกษา 2569</span>
+          <a href="https://docs.google.com/spreadsheets/d/1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI/edit#gid=0" 
+             target="_blank" 
+             style="color: white; font-size: 0.85rem; text-decoration: underline;" 
+             title="เปิดดูใน Google Sheet">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Sheet
+          </a>
+          <button type="button" class="btn-close-modal" id="btnCloseStudentsModal" style="background: rgba(255,255,255,0.2); color: white;">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Toolbar: Upload Excel & Action Buttons -->
+      <div class="student-manage-toolbar">
+        <div class="excel-upload-container">
+          <div class="excel-upload-title">อัปโหลดข้อมูลจาก Excel (.xlsx)</div>
+          <div class="excel-input-group">
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="file-input-custom">
+          </div>
+          <div class="excel-hint">
+            * คอลัมน์ใน Excel เรียงตามลำดับ: ระดับชั้น, เลขบัตรประชาชน, รหัสประจำตัว, ชื่อ-นามสกุล, เพศ, วันเกิด(dd/mm/yyyy), สถานะ
+          </div>
+        </div>
+
+        <div class="student-manage-actions">
+          <!-- 1. ดาวน์โหลด .PDF -->
+          <button type="button" class="btn-manage-pdf" id="btnExportStudentsPdf" title="ดาวน์โหลดรายชื่อนักเรียนของปีการศึกษานี้เป็น PDF">
+            <i class="fa-solid fa-book-bookmark"></i>
+            <span>ดาวน์โหลด .PDF</span>
+          </button>
+
+          <!-- 2. นำเข้าข้อมูล -->
+          <button type="button" class="btn-manage-import" id="btnImportExcel" title="นำเข้าข้อมูลนักเรียนจากไฟล์ Excel ที่เลือก">
+            <i class="fa-solid fa-file-import"></i>
+            <span>นำเข้าข้อมูล</span>
+          </button>
+
+          <!-- 3. + เพิ่มรายบุคคล -->
+          <button type="button" class="btn-manage-add" id="btnAddStudentSingle" title="เพิ่มข้อมูลนักเรียนทีละคน">
+            <i class="fa-solid fa-plus"></i>
+            <span>+ เพิ่มรายบุคคล</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Filter for Student Management -->
+      <div class="student-manage-filter-bar" style="padding: 10px 24px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.88rem; font-weight: 600; color: #475569;">กรองระดับชั้น:</span>
+          <select id="studentManageGradeFilter" class="form-select" style="width: 170px; padding: 4px 10px; font-size: 0.85rem;">
+            <option value="">ทุกระดับชั้น</option>
+          </select>
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b;">
+          จำนวนนักเรียนทั้งหมด: <strong id="studentCountBadge" style="color: var(--primary);">0</strong> คน
+        </div>
+      </div>
+
+      <!-- Student Data Table (ตามภาพแนบ) -->
+      <div class="student-table-wrapper">
+        <table class="student-manage-table" id="studentManageTable">
+          <thead>
+            <tr>
+              <th style="width: 80px; text-align: center;">ระดับชั้น</th>
+              <th style="width: 150px; text-align: center;">เลขบัตรประชาชน</th>
+              <th style="width: 110px; text-align: center;">รหัสประจำตัว</th>
+              <th style="text-align: left;">ชื่อ-นามสกุล</th>
+              <th style="width: 80px; text-align: center;">เพศ</th>
+              <th style="width: 110px; text-align: center;">วันเกิด</th>
+              <th style="width: 95px; text-align: center;">สถานะ</th>
+              <th style="width: 130px; text-align: center;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="studentsManageTableBody">
+            <!-- Populated dynamically via app.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="background: #fafafa;">
+        <button type="button" class="btn btn-secondary" onclick="closeStudentsModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       3.1 Add / Edit Individual Student Sub-Modal
+       ==================================================================== -->
+  <div class="modal-overlay" id="studentEditModal" style="z-index: 1100;">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="studentEditModalTitle">
+          <i class="fa-solid fa-user-pen" style="color: var(--primary);"></i>
+          <span>เพิ่มข้อมูลนักเรียน</span>
+        </h3>
+        <button type="button" class="btn-close-modal" id="btnCloseStudentEditModal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="studentEditForm">
+        <div class="modal-body">
+          <div class="form-grid">
+            <input type="hidden" id="studentEditIndex" value="-1">
+
+            <!-- ระดับชั้น -->
+            <div class="form-field">
+              <label for="studentEditGrade">ระดับชั้น <span class="req">*</span></label>
+              <select id="studentEditGrade" class="form-select" required>
+                <option value="อ.1">อ.1</option>
+                <option value="อ.2">อ.2</option>
+                <option value="อ.3">อ.3</option>
+                <option value="ป.1">ป.1</option>
+                <option value="ป.2">ป.2</option>
+                <option value="ป.3">ป.3</option>
+                <option value="ป.4">ป.4</option>
+                <option value="ป.5">ป.5</option>
+                <option value="ป.6">ป.6</option>
+                <option value="ม.1">ม.1</option>
+                <option value="ม.2">ม.2</option>
+                <option value="ม.3">ม.3</option>
+              </select>
+            </div>
+
+            <!-- เพศ -->
+            <div class="form-field">
+              <label for="studentEditGender">เพศ <span class="req">*</span></label>
+              <select id="studentEditGender" class="form-select" required>
+                <option value="ชาย">ชาย</option>
+                <option value="หญิง">หญิง</option>
+              </select>
+            </div>
+
+            <!-- รหัสประจำตัว -->
+            <div class="form-field">
+              <label for="studentEditCode">รหัสประจำตัว <span class="req">*</span></label>
+              <input type="text" id="studentEditCode" class="form-input" placeholder="เช่น 1600" required>
+            </div>
+
+            <!-- เลขบัตรประชาชน -->
+            <div class="form-field">
+              <label for="studentEditCitizenId">เลขบัตรประชาชน <span class="req">*</span></label>
+              <input type="text" id="studentEditCitizenId" class="form-input" placeholder="13 หลัก" maxlength="13" required>
+            </div>
+
+            <!-- ชื่อ-นามสกุล -->
+            <div class="form-field full-width">
+              <label for="studentEditName">ชื่อ-นามสกุล <span class="req">*</span></label>
+              <input type="text" id="studentEditName" class="form-input" placeholder="เช่น เด็กชายวัชระพงษ์ บุญธัญกรณ์" required>
+            </div>
+
+            <!-- วันเกิด -->
+            <div class="form-field">
+              <label for="studentEditBirthDate">วันเกิด (dd/mm/yyyy)</label>
+              <input type="text" id="studentEditBirthDate" class="form-input" placeholder="เช่น 13/11/2565">
+            </div>
+
+            <!-- สถานะ -->
+            <div class="form-field">
+              <label for="studentEditStatus">สถานะ <span class="req">*</span></label>
+              <select id="studentEditStatus" class="form-select" required>
+                <option value="เรียนอยู่" selected>เรียนอยู่</option>
+                <option value="ย้ายสถานศึกษา">ย้ายสถานศึกษา</option>
+                <option value="พักการเรียน">พักการเรียน</option>
+                <option value="สำเร็จการศึกษา">สำเร็จการศึกษา</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelStudentEdit">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary-record" id="btnSaveStudentEdit">
+            <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       4. Teachers Database Modal (ฐานข้อมูลครู Sheet=Teachers)
+       ==================================================================== -->
+  <div class="modal-overlay" id="teachersModal">
+    <div class="modal-dialog modal-large">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-chalkboard-user" style="color: #15803d;"></i>
+          <span>ฐานข้อมูลครู (Sheet=Teachers)</span>
+        </h3>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <a href="https://docs.google.com/spreadsheets/d/1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI/edit" 
+             target="_blank" 
+             class="btn-utility" 
+             title="เปิด Google Sheet หน้า Teachers">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดใน Google Sheet
+          </a>
+          <button type="button" class="btn-close-modal" id="btnCloseTeachersModal">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div style="margin-bottom: 16px;">
+          <input type="text" id="teacherSearchInput" class="form-input" placeholder="ค้นหาชื่อครู, ตำแหน่ง, หรือกลุ่มสาระ...">
+        </div>
+
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 50px;">ลำดับ</th>
+                <th>ชื่อ-นามสกุล</th>
+                <th>ตำแหน่ง</th>
+                <th>กลุ่มสาระ/ฝ่าย</th>
+                <th>เบอร์โทรศัพท์</th>
+              </tr>
+            </thead>
+            <tbody id="teachersTableBody">
+              <!-- Injected by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeTeachersModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       5. Settings Modal (Google Apps Script API Endpoint)
+       ==================================================================== -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-cloud-arrow-up" style="color: var(--secondary);"></i>
+          <span>ตั้งค่าการเชื่อมต่อ Google Sheets</span>
+        </h3>
+        <button type="button" class="btn-close-modal" id="btnCloseSettingsModal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div style="background: #f8fafc; border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px; border: 1px solid #e2e8f0; font-size: 0.88rem;">
+          <p style="margin-bottom: 4px;"><strong>Google Sheet ID:</strong> <code>1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI</code></p>
+          <p style="margin-bottom: 4px;"><strong>Google Drive Folder ID:</strong> <code>1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj</code></p>
+          <p><strong>รหัสผ่านบันทึกข้อมูล:</strong> <code>thunsandab1234</code></p>
+        </div>
+
+        <div class="form-field full-width">
+          <label for="apiUrlInput">
+            <i class="fa-solid fa-link" style="color: var(--primary);"></i>
+            <span>Google Apps Script Web App URL (ลงท้ายด้วย /exec):</span>
+          </label>
+          <input type="url" id="apiUrlInput" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
+          <small style="color: #64748b; margin-top: 6px; font-size: 0.82rem;">
+            * สามารถนำโค้ดในไฟล์ <code>Code.gs</code> ไปติดตั้งใน Apps Script ของชีต แล้วนำ URL เว็บแอปมาวางที่นี่
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnTestConnection">
+          <i class="fa-solid fa-plug-circle-check"></i> ทดสอบการเชื่อมต่อ
+        </button>
+        <button type="button" class="btn btn-primary-record" id="btnSaveSettings">
+          <i class="fa-solid fa-check"></i> บันทึกการตั้งค่า
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

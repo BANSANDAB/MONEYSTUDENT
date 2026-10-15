@@ -1,0 +1,1818 @@
+/* ==========================================================================
+   ระบบทุนการศึกษา โรงเรียนบ้านสันดาบ
+   Theme: Bright Purple (โทนสีม่วงสว่าง สง่างาม ทันสมัย)
+   ========================================================================== */
+
+:root {
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-light: #f5f3ff;
+  --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a855f7 100%);
+  --primary-glow: rgba(124, 58, 237, 0.25);
+  
+  --secondary: #4c1d95;
+  --secondary-hover: #3b0764;
+  --accent-purple: #c084fc;
+  --accent-purple-light: #fae8ff;
+  
+  --bg-main: #fbf8ff;
+  --bg-card: #ffffff;
+  --bg-header-gradient: linear-gradient(180deg, #ffffff 0%, #fbf8ff 100%);
+  
+  --text-main: #1e1b4b;
+  --text-muted: #6b7280;
+  --text-light: #ffffff;
+  
+  --border-color: #e9d5ff;
+  --border-focus: #8b5cf6;
+  
+  --shadow-sm: 0 2px 6px rgba(124, 58, 237, 0.05);
+  --shadow-md: 0 4px 14px rgba(124, 58, 237, 0.08);
+  --shadow-lg: 0 10px 25px -5px rgba(124, 58, 237, 0.12), 0 8px 10px -6px rgba(124, 58, 237, 0.06);
+  --shadow-purple: 0 4px 16px rgba(124, 58, 237, 0.28);
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-print: 'TH Sarabun PSK', 'TH Sarabun New', 'Sarabun', sans-serif;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Background Ambient Glow (Bright Purple Aura) */
+.bg-decoration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 400px;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.12) 0%, rgba(192, 132, 252, 0.05) 60%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 12px 18px 40px 18px;
+}
+
+/* --------------------------------------------------------------------------
+   1. แถบบนสุด: ซ้าย=ชื่อ "ระบบทุนการศึกษาโรงเรียนบ้านสันดาบ", ขวา=ปีการศึกษา
+   -------------------------------------------------------------------------- */
+.system-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 18px;
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+}
+
+.system-name-title {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.01em;
+}
+
+.system-name-title i {
+  font-size: 1.5rem;
+  color: var(--primary);
+}
+
+.year-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.year-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.year-select-dropdown {
+  padding: 8px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary);
+  background-color: white;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition);
+}
+
+.year-select-dropdown:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* --------------------------------------------------------------------------
+   2. ปุ่มเรียงลำดับ [บันทึกทุนการศึกษา] [ข้อมูลนักเรียน] [ดาวน์โหลด] [พิมพ์] (อยู่ก่อนค้นหา)
+   -------------------------------------------------------------------------- */
+.action-bar-row {
+  display: flex;
+  justify-content: flex-end; /* All buttons aligned to right */
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.main-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Buttons System */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* 1. บันทึกทุนการศึกษา (ปุ่มเด่นโทนม่วงสว่าง) */
+.btn-primary-record {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: var(--shadow-purple);
+  border: none;
+}
+
+.btn-primary-record:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+  filter: brightness(1.06);
+}
+
+/* 2. ข้อมูลนักเรียน (โทนม่วงอ่อนพรีเมียม) */
+.btn-database-stu {
+  background: #f5f3ff;
+  color: var(--primary);
+  border-color: #c4b5fd;
+}
+
+.btn-database-stu:hover {
+  background: #ede9fe;
+  border-color: #a78bfa;
+  transform: translateY(-1px);
+}
+
+/* 3. ดาวน์โหลด (ม่วงใส) */
+.btn-pdf {
+  background: #faf5ff;
+  color: #7c3aed;
+  border-color: #e9d5ff;
+}
+
+.btn-pdf:hover {
+  background: #f3e8ff;
+  border-color: #c084fc;
+  transform: translateY(-1px);
+}
+
+/* 4. พิมพ์ (ม่วงเข้มสวยงาม) */
+.btn-print {
+  background: #f3e8ff;
+  color: #581c87;
+  border-color: #ddd6fe;
+}
+
+.btn-print:hover {
+  background: #e9d5ff;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.btn-secondary:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* --------------------------------------------------------------------------
+   3. ส่วน Logo และหัวเรื่อง (ปรับให้พอดีกับหน้าจอ ไม่ใหญ่เกินไป)
+   -------------------------------------------------------------------------- */
+.header-hero {
+  text-align: center;
+  padding: 14px 18px 12px 18px;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-container {
+  display: inline-block;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.school-logo {
+  width: 68px;
+  height: auto;
+  max-height: 85px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(124, 58, 237, 0.15));
+  transition: transform 0.4s ease;
+}
+
+.school-logo:hover {
+  transform: scale(1.04);
+}
+
+.main-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #581c87;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+  line-height: 1.25;
+}
+
+.school-name {
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.academic-year-badge-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid #ddd6fe;
+  padding: 3px 14px;
+  border-radius: var(--radius-full);
+}
+
+.academic-year-display {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #6d28d9;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Search & Filter Area (ค้นหาและกรองข้อมูล - 2 ช่องพอดี)
+   -------------------------------------------------------------------------- */
+.filter-panel {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px 18px 14px 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f3e8ff;
+}
+
+.filter-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.filter-grid-two-cols {
+  grid-template-columns: 1fr 1fr;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-select, .form-input {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  color: var(--text-main);
+  background-color: white;
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-select:focus, .form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.btn-reset-filter {
+  padding: 9px 16px;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #6b21a8;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+}
+
+.btn-reset-filter:hover {
+  background: #f3e8ff;
+  color: #4c1d95;
+}
+
+/* --------------------------------------------------------------------------
+   Summary Stats Cards
+   -------------------------------------------------------------------------- */
+.stats-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: var(--transition);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.stat-icon.purple {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.stat-icon.violet {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.stat-icon.fuchsia {
+  background: #fae8ff;
+  color: #a21caf;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Scholarship History Data Table (หน้าหลัก - ดูอย่างเดียว)
+   -------------------------------------------------------------------------- */
+.table-card {
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+
+.table-card-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background: #faf5ff;
+}
+
+.table-card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.record-count-badge {
+  font-size: 0.82rem;
+  padding: 3px 12px;
+  background: #ede9fe;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  color: #6d28d9;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.data-table th,
+.data-table td {
+  white-space: nowrap !important;
+  vertical-align: middle;
+}
+
+.data-table th {
+  background: #f8f6fc;
+  color: #581c87;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border-color);
+  font-size: 0.88rem;
+}
+
+.data-table th.text-center, .data-table td.text-center {
+  text-align: center;
+}
+
+.data-table th.text-right, .data-table td.text-right {
+  text-align: right;
+}
+
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3e8ff;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+/* คอลัมน์ตาราง - จัดระยะให้ข้อมูลอยู่ในบรรทัดเดียว และหมายเหตุกว้างน้อยสุด */
+.data-table th.col-seq,
+.data-table td.col-seq {
+  width: 60px;
+  min-width: 55px;
+  max-width: 70px;
+  text-align: center !important;
+}
+
+.data-table th.col-date,
+.data-table td.col-date {
+  width: 110px;
+  min-width: 105px;
+  text-align: center !important;
+}
+
+.data-table th.col-name,
+.data-table td.col-name {
+  font-weight: 600;
+  color: #1e1b4b;
+}
+
+.data-table th.col-amount,
+.data-table td.col-amount {
+  width: 130px;
+  min-width: 120px;
+  text-align: right !important;
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+.data-table th.col-org,
+.data-table td.col-org {
+  white-space: nowrap !important;
+  color: #475569;
+}
+
+/* หมายเหตุ - กว้างน้อยสุด */
+.data-table th.col-note,
+.data-table td.col-note {
+  width: 80px !important;
+  min-width: 75px !important;
+  max-width: 90px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  color: #64748b;
+}
+
+.data-table th.col-action,
+.data-table td.col-action {
+  width: 130px;
+  min-width: 120px;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+  background-color: #faf5ff;
+}
+
+.amount-display {
+  font-weight: 700;
+  color: #7c3aed;
+  font-size: 0.96rem;
+}
+
+/* ยอดรวมเงินทุนการศึกษา แสดงใต้ตารางรวมกับตารางรายการประวัติการรับทุน */
+.table-total-row {
+  background: #faf5ff;
+  border-top: 2px solid var(--primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table-total-row td {
+  padding: 12px 14px;
+}
+
+.total-label-cell {
+  text-align: right;
+  font-size: 0.96rem;
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.total-amount-cell {
+  color: var(--primary);
+  font-size: 1.15rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.total-year-label {
+  font-weight: normal;
+  font-size: 0.86rem;
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+.total-empty-cell {
+  background: #faf5ff;
+}
+
+.badge-org {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.badge-grade {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #f5f3ff;
+  color: #4c1d95;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  color: #c4b5fd;
+}
+
+.empty-state p {
+  font-size: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Modals (Password, Record/Manage, Students, Settings)
+   -------------------------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(30, 27, 75, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  padding: 16px;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-dialog {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(20px) scale(0.98);
+  transition: transform 0.25s ease;
+}
+
+.modal-overlay.active .modal-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.modal-dialog.modal-large {
+  max-width: 1020px;
+}
+
+.modal-header {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background: #faf5ff;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-close-modal {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f3e8ff;
+  color: #6b21a8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.btn-close-modal:hover {
+  background: #e9d5ff;
+  color: #4c1d95;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: #faf5ff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Password Modal */
+.password-box {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.password-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f3e8ff;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+}
+
+.password-input-group {
+  position: relative;
+  max-width: 340px;
+  margin: 16px auto 8px auto;
+}
+
+.password-input-group .form-input {
+  padding-right: 42px;
+  text-align: center;
+  font-size: 1.15rem;
+  letter-spacing: 2px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.password-error-msg {
+  color: #dc2626;
+  font-size: 0.88rem;
+  margin-top: 6px;
+  display: none;
+}
+
+/* Form Styles */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.form-field label .req {
+  color: #dc2626;
+}
+
+.amount-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.preset-chip {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  color: #6b21a8;
+  transition: var(--transition);
+}
+
+.preset-chip:hover {
+  background: #ede9fe;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* --------------------------------------------------------------------------
+   ระบบจัดการข้อมูลนักเรียน (โทนม่วงสว่าง)
+   -------------------------------------------------------------------------- */
+.student-manage-header {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 14px 24px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.student-manage-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-manage-header .academic-year-tag {
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+.student-manage-toolbar {
+  padding: 18px 24px 14px 24px;
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 1px solid #f3e8ff;
+}
+
+.excel-upload-container {
+  flex: 1 1 360px;
+}
+
+.excel-upload-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin-bottom: 8px;
+}
+
+.file-input-custom {
+  padding: 6px 10px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  background: white;
+  color: #475569;
+  cursor: pointer;
+  max-width: 320px;
+}
+
+.excel-hint {
+  font-size: 0.78rem;
+  color: #7c3aed;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.student-manage-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-manage-pdf {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-manage-pdf:hover {
+  background: #6d28d9;
+  transform: translateY(-1px);
+}
+
+.btn-manage-import {
+  background: #581c87;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-manage-import:hover {
+  background: #3b0764;
+  transform: translateY(-1px);
+}
+
+.btn-manage-add {
+  background: white;
+  color: #7c3aed;
+  border: 1.5px solid #7c3aed;
+  border-radius: var(--radius-sm);
+  padding: 7px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-manage-add:hover {
+  background: #f5f3ff;
+  transform: translateY(-1px);
+}
+
+/* Student Table */
+.student-table-wrapper {
+  padding: 0 24px 20px 24px;
+  overflow-x: auto;
+  max-height: 480px;
+}
+
+.student-manage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.student-manage-table thead tr {
+  background: #f3e8ff;
+  border-bottom: 2px solid #e9d5ff;
+}
+
+.student-manage-table th {
+  color: #581c87;
+  font-weight: 700;
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+
+.student-manage-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3e8ff;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.student-manage-table tbody tr:hover {
+  background-color: #faf5ff;
+}
+
+/* ปุ่มแก้ไข และ ปุ่มลบ ในช่องจัดการ */
+.btn-table-edit {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-table-edit:hover {
+  background: #d97706;
+}
+
+.btn-table-delete {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-left: 4px;
+}
+
+.btn-table-delete:hover {
+  background: #dc2626;
+}
+
+/* --------------------------------------------------------------------------
+   Toast Notifications
+   -------------------------------------------------------------------------- */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  min-width: 300px;
+  padding: 14px 18px;
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border-left: 5px solid #8b5cf6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  animation: slideInRight 0.3s ease;
+}
+
+.toast.toast-error {
+  border-left-color: #ef4444;
+}
+
+.toast.toast-warning {
+  border-left-color: #f59e0b;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Footer */
+.app-footer {
+  text-align: center;
+  padding: 24px 0 10px 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+/* --------------------------------------------------------------------------
+   Print & Official PDF Styles (TH SarabunPSK, Fit Paper, Zero Purple Colors)
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 12mm 12mm;
+  }
+
+  /* บังคับใช้ font TH Sarabun PSK และตัดเอฟเฟกต์สีออกทั้งหมด */
+  *,
+  *::before,
+  *::after {
+    font-family: 'TH Sarabun PSK', 'TH Sarabun New', 'Sarabun', sans-serif !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 14pt !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ตัดแถบสีม่วง เส้นขอบสี และปุ่มควบคุมหน้าจอออกทั้งหมด */
+  .bg-decoration,
+  .header-hero::before,
+  .header-hero::after,
+  .system-top-header,
+  .action-bar-row,
+  .filter-panel,
+  .stats-cards-row,
+  .table-card-header,
+  .btn-table-edit,
+  .btn-table-delete,
+  .toast-container,
+  .modal-overlay,
+  .app-footer,
+  th.actions-column,
+  td.actions-column {
+    display: none !important;
+    content: none !important;
+    height: 0 !important;
+    background: none !important;
+    border: none !important;
+  }
+
+  .app-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* หัวกระดาษเอกสารทางการ (ไม่มีแถบสีม่วงด้านบน) */
+  .header-hero {
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 0 10px 0 !important;
+    text-align: center !important;
+  }
+
+  .logo-container {
+    margin-bottom: 4px !important;
+  }
+
+  .school-logo {
+    width: 58px !important;
+    height: auto !important;
+    filter: none !important;
+    margin-bottom: 2px !important;
+  }
+
+  .main-title {
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    margin: 0 0 2px 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .school-name {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    margin: 0 0 2px 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .academic-year-badge-wrapper {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    display: block !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  .academic-year-display {
+    color: #000000 !important;
+    font-size: 15pt !important;
+    font-weight: bold !important;
+    justify-content: center !important;
+  }
+
+  .academic-year-display i {
+    display: none !important;
+  }
+
+  .table-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .table-responsive {
+    overflow: visible !important;
+  }
+
+  /* ตารางข้อมูล จัดให้พอดีกับหน้ากระดาษ A4 (100%) และตัดสีม่วงออก */
+  .data-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    margin: 0 !important;
+    border: 1px solid #000000 !important;
+  }
+
+  .data-table thead {
+    display: table-header-group !important;
+  }
+
+  .data-table tbody tr {
+    page-break-inside: avoid !important;
+  }
+
+  .data-table th,
+  .data-table td {
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    background: transparent !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+  }
+
+  .data-table th {
+    background: #f0f0f0 !important;
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    padding: 5px 4px !important;
+  }
+
+  .data-table td {
+    font-size: 13.5pt !important;
+    padding: 4px 6px !important;
+    vertical-align: middle !important;
+  }
+
+  /* สัดส่วนความกว้างคอลัมน์ให้พอดีหน้ากระดาษ A4 รวม 100% ข้อมูลอยู่ในบรรทัดเดียว หมายเหตุกว้างน้อยสุด */
+  .data-table th:nth-child(1),
+  .data-table td:nth-child(1) {
+    width: 6% !important;
+    text-align: center !important;
+  }
+
+  .data-table th:nth-child(2),
+  .data-table td:nth-child(2) {
+    width: 14% !important;
+    text-align: center !important;
+  }
+
+  .data-table th:nth-child(3),
+  .data-table td:nth-child(3) {
+    width: 30% !important;
+    text-align: left !important;
+    font-weight: normal !important;
+  }
+
+  .data-table th:nth-child(4),
+  .data-table td:nth-child(4) {
+    width: 15% !important;
+    text-align: right !important;
+    font-weight: bold !important;
+  }
+
+  .data-table th:nth-child(5),
+  .data-table td:nth-child(5) {
+    width: 27% !important;
+    text-align: left !important;
+    word-break: normal !important;
+    font-size: 13pt !important;
+  }
+
+  .data-table th:nth-child(6),
+  .data-table td:nth-child(6) {
+    width: 8% !important;
+    text-align: center !important;
+  }
+
+  .amount-display {
+    color: #000000 !important;
+  }
+
+  /* แถวสรุปยอดรวมใต้ตาราง (ตัดสีม่วงทั้งหมด เป็นขาวดำทางการ) */
+  .data-table tfoot {
+    display: table-footer-group !important;
+  }
+
+  .table-total-row {
+    background: transparent !important;
+    border: 1px solid #000000 !important;
+    page-break-inside: avoid !important;
+  }
+
+  .table-total-row td {
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    background: transparent !important;
+    padding: 6px 8px !important;
+  }
+
+  .total-label-cell {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    text-align: right !important;
+  }
+
+  .total-amount-cell {
+    font-size: 14.5pt !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    text-align: right !important;
+  }
+
+  .total-year-label {
+    color: #000000 !important;
+    font-weight: normal !important;
+  }
+
+  .total-empty-cell {
+    background: transparent !important;
+    border: 1px solid #000000 !important;
+  }
+
+  /* ส่วนลายเซ็นท้ายเอกสารแบบทางการ */
+  .print-signatures {
+    display: block !important;
+    margin-top: 30px !important;
+    page-break-inside: avoid !important;
+  }
+
+  .sig-grid {
+    display: flex !important;
+    justify-content: space-around !important;
+    text-align: center !important;
+    margin-top: 20px !important;
+  }
+
+  .sig-col {
+    width: 45% !important;
+  }
+
+  .sig-col p {
+    font-size: 14pt !important;
+    color: #000000 !important;
+    margin: 5px 0 !important;
+    line-height: 1.4 !important;
+  }
+
+  .sig-line {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Mobile & Tablet Responsive Design (การปรับการใช้งานในมือถือให้พอดีและสวยงาม)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* Container */
+  .app-wrapper {
+    padding: 10px 12px 48px 12px;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* 1. แถบบนสุด */
+  .system-top-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .system-name-title {
+    font-size: 1.05rem;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .system-name-title i {
+    font-size: 1.25rem;
+  }
+
+  .year-selector-group {
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+    background: #faf5ff;
+    padding: 5px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid #ede9fe;
+  }
+
+  .year-label {
+    font-size: 0.9rem;
+  }
+
+  .year-select-dropdown {
+    font-size: 16px; /* ป้องกัน iOS Safari auto-zoom */
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+  }
+
+  /* 2. ปุ่มเมนูการทำงาน 4 ปุ่ม (จัดแบบ 2x2 สวยงามเต็มหน้าจอ) */
+  .action-bar-row {
+    width: 100%;
+    margin-bottom: 10px;
+    justify-content: stretch;
+  }
+
+  .main-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .main-action-buttons .btn {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 6px;
+    font-size: 0.84rem;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  .main-action-buttons .btn i {
+    font-size: 0.95rem;
+  }
+
+  /* 3. ส่วน Header Hero & ตราโรงเรียน */
+  .header-hero {
+    padding: 12px 12px 10px 12px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-md);
+  }
+
+  .school-logo {
+    width: 54px;
+    max-height: 68px;
+    margin-bottom: 2px;
+  }
+
+  .main-title {
+    font-size: 1.25rem;
+    line-height: 1.25;
+    margin-bottom: 2px;
+  }
+
+  .school-name {
+    font-size: 1.02rem;
+    margin-bottom: 4px;
+  }
+
+  .academic-year-badge-wrapper {
+    padding: 2px 12px;
+  }
+
+  .academic-year-display {
+    font-size: 0.88rem;
+  }
+
+  /* 4. ส่วนค้นหาและกรองข้อมูล */
+  .filter-panel {
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-md);
+  }
+
+  .filter-panel-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+
+  .filter-title {
+    font-size: 0.92rem;
+  }
+
+  .btn-reset-filter {
+    height: 36px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+  }
+
+  .filter-grid-two-cols {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .form-select, .form-input {
+    font-size: 16px !important; /* ป้องกัน iOS Safari auto-zoom */
+    min-height: 42px;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  /* 5. การ์ดตารางประวัติทุนการศึกษา */
+  .table-card {
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+  }
+
+  .table-card-header {
+    padding: 10px 14px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .table-card-title {
+    font-size: 0.92rem;
+  }
+
+  .record-count-badge {
+    font-size: 0.78rem;
+    padding: 2px 10px;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .table-responsive::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 4px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .table-total-row td {
+    padding: 10px 10px !important;
+  }
+
+  .total-label-cell {
+    font-size: 0.86rem !important;
+  }
+
+  .total-amount-cell {
+    font-size: 1.05rem !important;
+  }
+
+  /* 6. หน้าต่าง Pop-up (Modals) บนมือถือ */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end; /* Mobile Bottom Sheet / Centered feel */
+  }
+
+  .modal-dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 18px 18px 12px 12px !important;
+    margin: 0 !important;
+  }
+
+  .modal-header {
+    padding: 12px 16px !important;
+  }
+
+  .modal-title {
+    font-size: 1.05rem !important;
+  }
+
+  .btn-close-modal {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  .modal-body {
+    padding: 14px !important;
+  }
+
+  .modal-footer {
+    padding: 12px 14px !important;
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+
+  .modal-footer .btn {
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+  }
+
+  /* แบบฟอร์มในโมดอล */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .amount-presets {
+    gap: 6px !important;
+  }
+
+  .preset-chip {
+    padding: 5px 9px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .record-form-actions {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .record-form-actions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* 7. จัดการข้อมูลนักเรียน (Student Management Modal) บนมือถือ */
+  .student-manage-header {
+    padding: 12px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .student-manage-header .header-left {
+    font-size: 1.05rem !important;
+  }
+
+  .student-manage-toolbar {
+    padding: 12px 14px !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .excel-upload-container {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .file-input-custom {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .student-manage-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .student-manage-actions .btn-manage-add {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .student-manage-actions .btn-manage-pdf,
+  .student-manage-actions .btn-manage-import {
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 0.82rem !important;
+  }
+
+  .student-manage-filter-bar {
+    padding: 10px 14px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  /* 8. การแจ้งเตือน Toast บนมือถือ */
+  .toast-container {
+    bottom: 12px !important;
+    right: 12px !important;
+    left: 12px !important;
+    align-items: center !important;
+  }
+
+  .toast {
+    min-width: unset !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    padding: 10px 14px !important;
+    font-size: 0.86rem !important;
+  }
+}
+
+/* หน้าจอมือถือขนาดกะทัดรัด (<= 380px เช่น iPhone SE) */
+@media (max-width: 380px) {
+  .main-title {
+    font-size: 1.15rem;
+  }
+
+  .system-name-title {
+    font-size: 0.95rem;
+  }
+
+  .main-action-buttons .btn {
+    font-size: 0.78rem;
+    padding: 7px 4px;
+    gap: 5px;
+  }
+
+  .main-action-buttons .btn i {
+    font-size: 0.82rem;
+  }
+
+  .preset-chip {
+    padding: 4px 7px !important;
+    font-size: 0.74rem !important;
+  }
+}
