@@ -34,6 +34,50 @@ const DEFAULT_GRADES = [
   "ม.1", "ม.2", "ม.3"
 ];
 
+/**
+ * ตรวจสอบว่าเป็นระดับชั้นของโรงเรียนที่ถูกต้องหรือไม่
+ * ป้องกันไม่ให้ค่าอื่น เช่น วันที่ (03/08/2026), ตัวเลข หรือข้อความอื่นๆ หลุดเข้ามาเป็นระดับชั้น
+ */
+function isValidGrade(val) {
+  if (!val || typeof val !== "string") return false;
+  const s = val.trim();
+  if (!s) return false;
+  // ห้ามเป็นรูปแบบวันที่ เช่น 03/08/2026, 2026-03-08, Date(...)
+  if (/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(s) || /^\d{4}[/-]\d{1,2}[/-]\d{1,2}$/.test(s)) return false;
+  if (/Date\(/i.test(s)) return false;
+  // ห้ามเป็นตัวเลขล้วน เช่น ยอดเงิน หรือ ปี พ.ศ.
+  if (/^\d+(\.\d+)?$/.test(s)) return false;
+  // รูปแบบระดับชั้นมาตรฐานของโรงเรียนในไทย เช่น อ.1 - อ.3, ป.1 - ป.6, ม.1 - ม.3
+  if (/^(อ|ป|ม)\.\s*\d+/i.test(s)) return true;
+  if (/^(อนุบาล|ประถม|มัธยม)/i.test(s)) return true;
+  return DEFAULT_GRADES.includes(s);
+}
+
+/**
+ * ดึงระดับชั้นที่แท้จริงจากฐานข้อมูลนักเรียน (Students Sheet) มาใส่ในรายการทุนการศึกษา
+ * แก้ปัญหาการดึงข้อมูลผิดแถว/คอลัมน์ โดยยึดชื่อ-นามสกุลนักเรียนเป็นหลัก
+ */
+function relinkScholarshipGrades() {
+  if (!state.scholarships || state.scholarships.length === 0) return;
+  state.scholarships.forEach(item => {
+    const studentName = (item.studentName || item.name || "").trim();
+    if (!studentName) return;
+
+    // ค้นหานักเรียนในฐานข้อมูลนักเรียน
+    const matchStu = state.students.find(s => 
+      s.name && s.name.trim() === studentName && 
+      (s.academicYear === item.academicYear || !item.academicYear || s.academicYear === "2569")
+    ) || state.students.find(s => s.name && s.name.trim() === studentName);
+
+    if (matchStu && isValidGrade(matchStu.grade)) {
+      item.grade = matchStu.grade.trim();
+    } else if (!isValidGrade(item.grade)) {
+      item.grade = "";
+    }
+  });
+}
+
+
 // Application State (ไม่มีการแต่งข้อมูลขึ้นมาเอง เริ่มต้นจากฐานข้อมูล)
 const state = {
   selectedAcademicYear: "2569",
@@ -191,17 +235,40 @@ async function loadDatabase() {
     localStorage.removeItem(CONFIG.STORAGE_KEYS.STUDENTS);
     state.students = [];
   } else if (cachedStudents) {
-    try { state.students = JSON.parse(cachedStudents); } catch (e) {}
+    try {
+      const parsed = JSON.parse(cachedStudents);
+      // กรองและล้างระดับชั้นที่ผิดพลาด (เช่น วันที่) ออกทันที
+      state.students = Array.isArray(parsed) ? parsed.filter(s => s && s.name).map(s => ({
+        ...s,
+        grade: isValidGrade(s.grade) ? s.grade.trim() : ""
+      })) : [];
+    } catch (e) {
+      state.students = [];
+    }
   }
 
   if (cachedScholarships) {
     try { 
-      state.scholarships = JSON.parse(cachedScholarships).map(s => ({
-        ...s,
-        recordDate: formatToThaiDate(s.recordDate)
-      })); 
-    } catch (e) {}
+      const parsed = JSON.parse(cachedScholarships);
+      state.scholarships = Array.isArray(parsed) ? parsed.filter(s => s && (s.studentName || s.name)).map(s => {
+        const studentName = String(s.studentName || s.name || "").trim();
+        const rawGrade = String(s.grade || "").trim();
+        // ล้างระดับชั้นที่ผิดพลาด เช่น วันที่
+        const grade = isValidGrade(rawGrade) ? rawGrade : "";
+        return {
+          ...s,
+          studentName,
+          grade,
+          recordDate: formatToThaiDate(s.recordDate)
+        };
+      }) : [];
+    } catch (e) {
+      state.scholarships = [];
+    }
   }
+
+  // ผูกระดับชั้นที่แท้จริงจากฐานข้อมูลนักเรียนให้ประวัติการรับทุนการศึกษา
+  relinkScholarshipGrades();
 
   updateAcademicYearHeader();
   populateGradeDropdowns();
@@ -263,6 +330,10 @@ async function fetchAllFromGoogleSheet() {
     }
 
     if (hasLoadedAny) {
+      // ผูกระดับชั้นที่แท้จริงจากฐานข้อมูลนักเรียนให้ประวัติการรับทุนการศึกษา
+      relinkScholarshipGrades();
+      localStorage.setItem(CONFIG.STORAGE_KEYS.SCHOLARSHIPS, JSON.stringify(state.scholarships));
+
       populateGradeDropdowns();
       applyFilters();
       renderStudentsManageTable();
@@ -296,16 +367,16 @@ function parseGVizStudents(rawText) {
     const json = JSON.parse(rawText.substring(start, end + 1));
     if (!json.table || !json.table.rows) return [];
 
-    // ระบุ index คอลัมน์โดยอัตโนมัติตาม Label หากมี หรือ fallback ตามลำดับมาตรฐาน
+    // ระบุ index คอลัมน์โดยอัตโนมัติตาม Label หากมี
     const colMap = {
-      academicYear: 0,
-      grade: 1,
-      citizenId: 2,
-      studentCode: 3,
-      name: 4,
-      gender: 5,
-      birthDate: 6,
-      status: 7
+      academicYear: -1,
+      grade: -1,
+      citizenId: -1,
+      studentCode: -1,
+      name: -1,
+      gender: -1,
+      birthDate: -1,
+      status: -1
     };
 
     if (json.table.cols && json.table.cols.length > 0) {
@@ -322,27 +393,46 @@ function parseGVizStudents(rawText) {
       });
     }
 
+    // กรณีไม่มี Label หรือชีตมาตรฐาน ให้ตรวจลำดับมาตรฐานอย่างปลอดภัย
+    // คอลัมน์ระดับชั้นต้องเป็นระดับชั้นจริง (isValidGrade) ไม่ใช่วันที่
+    if (colMap.grade === -1) {
+      const sampleVal = json.table.rows[0]?.c?.[1]?.v || json.table.rows[0]?.c?.[1]?.f || "";
+      if (isValidGrade(String(sampleVal))) {
+        colMap.grade = 1;
+      }
+    }
+    if (colMap.academicYear === -1) colMap.academicYear = 0;
+    if (colMap.citizenId === -1) colMap.citizenId = 2;
+    if (colMap.studentCode === -1) colMap.studentCode = 3;
+    if (colMap.name === -1) colMap.name = 4;
+    if (colMap.gender === -1) colMap.gender = 5;
+    if (colMap.birthDate === -1) colMap.birthDate = 6;
+    if (colMap.status === -1) colMap.status = 7;
+
     return json.table.rows.map(row => {
       const c = row.c || [];
       const getVal = idx => {
-        if (!c[idx]) return "";
+        if (idx < 0 || !c[idx]) return "";
         if (c[idx].f !== undefined && c[idx].f !== null) return String(c[idx].f).trim();
         if (c[idx].v !== undefined && c[idx].v !== null) return String(c[idx].v).trim();
         return "";
       };
 
+      const rawGrade = colMap.grade !== -1 ? getVal(colMap.grade) : "";
+      const validGrade = isValidGrade(rawGrade) ? rawGrade : "";
       const name = getVal(colMap.name);
+
       return {
-        academicYear: getVal(colMap.academicYear) || "2569",
-        grade: getVal(colMap.grade),
-        citizenId: getVal(colMap.citizenId),
-        studentCode: getVal(colMap.studentCode),
+        academicYear: colMap.academicYear !== -1 ? (getVal(colMap.academicYear) || "2569") : "2569",
+        grade: validGrade,
+        citizenId: colMap.citizenId !== -1 ? getVal(colMap.citizenId) : "",
+        studentCode: colMap.studentCode !== -1 ? getVal(colMap.studentCode) : "",
         name: name,
-        gender: getVal(colMap.gender) || "ชาย",
-        birthDate: getVal(colMap.birthDate),
-        status: getVal(colMap.status) || "เรียนอยู่"
+        gender: colMap.gender !== -1 ? (getVal(colMap.gender) || "ชาย") : "ชาย",
+        birthDate: colMap.birthDate !== -1 ? getVal(colMap.birthDate) : "",
+        status: colMap.status !== -1 ? (getVal(colMap.status) || "เรียนอยู่") : "เรียนอยู่"
       };
-    }).filter(s => s.name && s.name.length > 0);
+    }).filter(s => s.name && s.name.length > 0 && s.grade);
   } catch (e) {
     console.error("parseGVizStudents error:", e);
     return [];
@@ -360,6 +450,28 @@ function parseGVizScholarships(rawText) {
     const json = JSON.parse(rawText.substring(start, end + 1));
     if (!json.table || !json.table.rows) return [];
 
+    // ระบุคอลัมน์ของชีตทุนการศึกษาอย่างแม่นยำ
+    const colMap = {
+      academicYear: 0,
+      recordDate: 1,
+      studentName: 2,
+      amount: 3,
+      organization: 4,
+      note: 5
+    };
+
+    if (json.table.cols && json.table.cols.length > 0) {
+      json.table.cols.forEach((col, idx) => {
+        const lbl = (col.label || "").trim();
+        if (/ปีการศึกษา/i.test(lbl)) colMap.academicYear = idx;
+        else if (/วันเดือนปี|วัน\/เดือน\/ปี|วันที่/i.test(lbl)) colMap.recordDate = idx;
+        else if (/ชื่อ-นามสกุล|ชื่อ/i.test(lbl)) colMap.studentName = idx;
+        else if (/จำนวนเงิน|ยอดเงิน/i.test(lbl)) colMap.amount = idx;
+        else if (/หน่วยงาน/i.test(lbl)) colMap.organization = idx;
+        else if (/หมายเหตุ/i.test(lbl)) colMap.note = idx;
+      });
+    }
+
     return json.table.rows.map((row, index) => {
       const c = row.c || [];
       const getVal = idx => (c[idx] ? (c[idx].f !== undefined ? c[idx].f : c[idx].v) : "");
@@ -371,19 +483,25 @@ function parseGVizScholarships(rawText) {
       // Col 3: จำนวนเงิน
       // Col 4: หน่วยงานมอบ
       // Col 5: หมายเหตุ
-      const academicYear = String(getVal(0) || "2569").trim();
-      const rawDateVal = c[1] ? c[1].v : "";
-      const rawDateFormatted = c[1] ? c[1].f : "";
+      const academicYear = String(getVal(colMap.academicYear) || "2569").trim();
+      const rawDateVal = c[colMap.recordDate] ? c[colMap.recordDate].v : "";
+      const rawDateFormatted = c[colMap.recordDate] ? c[colMap.recordDate].f : "";
       const recordDate = formatToThaiDate(rawDateVal, rawDateFormatted);
-      const studentName = String(getVal(2) || "").trim();
-      const amount = Number(c[3] ? c[3].v : 0) || 0;
-      const organization = String(getVal(4) || "").trim();
-      const note = String(getVal(5) || "").trim();
+      const studentName = String(getVal(colMap.studentName) || "").trim();
+      const amount = Number(c[colMap.amount] ? c[colMap.amount].v : 0) || 0;
+      const organization = String(getVal(colMap.organization) || "").trim();
+      const note = String(getVal(colMap.note) || "").trim();
 
-      // Find grade from students list if available
+      // ดึงระดับชั้นที่แท้จริงจากฐานข้อมูลนักเรียน (Students Sheet)
       let grade = "";
-      const matchStu = state.students.find(s => s.name === studentName && s.academicYear === academicYear);
-      if (matchStu) grade = matchStu.grade;
+      const matchStu = state.students.find(s => 
+        s.name && s.name.trim() === studentName && 
+        (s.academicYear === academicYear || !academicYear || s.academicYear === "2569")
+      ) || state.students.find(s => s.name && s.name.trim() === studentName);
+
+      if (matchStu && isValidGrade(matchStu.grade)) {
+        grade = matchStu.grade.trim();
+      }
 
       return {
         id: "SCH-" + (index + 1) + "-" + Date.now(),
@@ -485,20 +603,29 @@ function getCurrentYearStudents() {
 
 /**
  * Populate Grade Dropdowns based on distinct classes found in database or default
+ * กรองเฉพาะระดับชั้นที่ถูกต้องของโรงเรียนเท่านั้น (ห้ามมีวันที่เด็ดขาด)
  */
 function populateGradeDropdowns() {
   const currentStudents = getCurrentYearStudents();
   
-  // รวบรวมระดับชั้นที่มีทั้งในฐานข้อมูลนักเรียนและในรายการทุนการศึกษา
-  let gradesInUse = Array.from(new Set([
-    ...currentStudents.map(s => s.grade).filter(Boolean),
-    ...state.scholarships.map(s => s.grade).filter(Boolean)
-  ]));
+  // รวบรวมระดับชั้นเฉพาะที่เป็นระดับชั้นจริง (isValidGrade)
+  let studentGrades = currentStudents.map(s => s.grade).filter(isValidGrade);
+  
+  // หากยังไม่มีนักเรียนในปีการศึกษานี้ ให้ดูจากนักเรียนทั้งหมดในฐานข้อมูล
+  if (studentGrades.length === 0) {
+    studentGrades = state.students.map(s => s.grade).filter(isValidGrade);
+  }
+
+  // ดึงระดับชั้นจากรายการทุนการศึกษาที่ถูกต้อง (ถ้ามี)
+  const schGrades = state.scholarships.map(s => s.grade).filter(isValidGrade);
+
+  // รวมระดับชั้นทั้งหมดและตัดค่าซ้ำ
+  let gradesInUse = Array.from(new Set([...studentGrades, ...schGrades]));
   
   if (gradesInUse.length === 0) {
     gradesInUse = [...DEFAULT_GRADES];
   } else {
-    // Sort logically
+    // จัดเรียงตามลำดับชั้นเรียนที่ถูกต้อง: อ.1, อ.2, อ.3, ป.1 - ป.6, ม.1 - ม.3
     gradesInUse.sort((a, b) => {
       const ia = DEFAULT_GRADES.indexOf(a);
       const ib = DEFAULT_GRADES.indexOf(b);
@@ -524,9 +651,19 @@ function populateGradeDropdowns() {
 
   // 2. Record Modal Grade (สำหรับปีการศึกษาที่เลือก)
   elements.recordGrade.innerHTML = `<option value="" disabled selected>-- เลือกระดับชั้น --</option>`;
-  let recordGrades = Array.from(new Set(currentStudents.map(s => s.grade).filter(Boolean)));
+  let recordGrades = Array.from(new Set(currentStudents.map(s => s.grade).filter(isValidGrade)));
+  if (recordGrades.length === 0) {
+    recordGrades = Array.from(new Set(state.students.map(s => s.grade).filter(isValidGrade)));
+  }
   if (recordGrades.length === 0) recordGrades = [...DEFAULT_GRADES];
-  recordGrades.sort((a, b) => DEFAULT_GRADES.indexOf(a) - DEFAULT_GRADES.indexOf(b));
+  recordGrades.sort((a, b) => {
+    const ia = DEFAULT_GRADES.indexOf(a);
+    const ib = DEFAULT_GRADES.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b, 'th');
+  });
   recordGrades.forEach(grade => {
     const opt = document.createElement("option");
     opt.value = grade;
