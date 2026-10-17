@@ -7,7 +7,8 @@
  * ==============================================================================
  */
 
-const SPREADSHEET_ID = "1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI";
+const SPREADSHEET_ID = "1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI"; // ฐานข้อมูลหลัก (สำหรับบันทึกและจัดการข้อมูลทุนการศึกษา)
+const STUDENTS_SPREADSHEET_ID = "1jqxY-MFf26KpYpYR2J6Lq0FBOp7HS-fe58sSWAOBnsA"; // ฐานข้อมูลนักเรียน (ดึงชื่อ-นามสกุล, ระดับชั้น ฯลฯ)
 const FOLDER_ID = "1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj";
 const AUTH_PASSWORD = "thunsandab1234";
 
@@ -16,6 +17,19 @@ const SHEET_NAMES = {
   TEACHERS: "Teachers",
   SCHOLARSHIPS: "Scholarships"
 };
+
+/**
+ * ฟังก์ชันเปิดชีตนักเรียนจาก STUDENTS_SPREADSHEET_ID
+ */
+function getStudentSheet(fallbackSS) {
+  try {
+    const studentSS = SpreadsheetApp.openById(STUDENTS_SPREADSHEET_ID);
+    return studentSS.getSheetByName(SHEET_NAMES.STUDENTS) || studentSS.getSheets()[0];
+  } catch (err) {
+    Logger.log("ไม่สามารถเปิด STUDENTS_SPREADSHEET_ID ได้ ใช้ชีตสำรอง: " + err);
+    return fallbackSS ? fallbackSS.getSheetByName(SHEET_NAMES.STUDENTS) : null;
+  }
+}
 
 /**
  * ฟังก์ชันสำหรับรับคำขอแบบ GET (อ่านข้อมูล)
@@ -27,19 +41,21 @@ function doGet(e) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     checkAndInitSheets(ss);
 
+    const studentSheet = getStudentSheet(ss);
     let result = {};
 
     if (action === "getAllData") {
       result = {
         status: "success",
-        students: getSheetData(ss.getSheetByName(SHEET_NAMES.STUDENTS)),
+        students: getSheetData(studentSheet),
         teachers: getSheetData(ss.getSheetByName(SHEET_NAMES.TEACHERS)),
         scholarships: getSheetData(ss.getSheetByName(SHEET_NAMES.SCHOLARSHIPS)),
         sheetId: SPREADSHEET_ID,
+        studentsSheetId: STUDENTS_SPREADSHEET_ID,
         folderId: FOLDER_ID
       };
     } else if (action === "getStudents") {
-      let students = getSheetData(ss.getSheetByName(SHEET_NAMES.STUDENTS));
+      let students = getSheetData(studentSheet);
       if (academicYear) {
         students = students.filter(s => s.academicYear === academicYear);
       }
@@ -112,41 +128,44 @@ function doPost(e) {
       const note = data.note || "";
       const timestamp = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
 
-      // ตรวจสอบว่าเป็นการแก้ไขรายการเดิมหรือไม่ (เช็คจาก ID)
-      const values = sheet.getDataRange().getValues();
-      let updated = false;
+      // ตรวจสอบโครงสร้างหัวตารางของชีตทุนการศึกษา (รองรับทั้ง 6 คอลัมน์ และ 9 คอลัมน์)
+      const firstHeader = sheet.getRange(1, 1).getValue().toString().trim();
+      const isSixColFormat = (firstHeader === "ปีการศึกษา");
 
-      for (let i = 1; i < values.length; i++) {
-        if (values[i][0] == targetId) {
-          sheet.getRange(i + 1, 1, 1, 9).setValues([[
-            targetId,
-            recordDate,
-            academicYear,
-            grade,
-            studentName,
-            amount,
-            organization,
-            note,
-            timestamp
-          ]]);
-          updated = true;
-          break;
+      if (isSixColFormat) {
+        // รูปแบบ 6 คอลัมน์ตามชีตจริง: ปีการศึกษา, วันเดือนปี, ชื่อ-นามสกุลนักเรียน, จำนวนเงิน, หน่วยงานที่มอบ, หมายเหตุ
+        const values = sheet.getDataRange().getValues();
+        let updated = false;
+        for (let i = 1; i < values.length; i++) {
+          if (values[i][0] == academicYear && values[i][2] == studentName) {
+            sheet.getRange(i + 1, 1, 1, 6).setValues([[
+              academicYear, recordDate, studentName, amount, organization, note
+            ]]);
+            updated = true;
+            break;
+          }
         }
-      }
-
-      if (!updated) {
-        // เพิ่มแถวใหม่ พร้อมระบบตรวจสอบและขยายแถวอัตโนมัติหากแถวเต็ม
-        safeAppendRow(sheet, [
-          targetId,
-          recordDate,
-          academicYear,
-          grade,
-          studentName,
-          amount,
-          organization,
-          note,
-          timestamp
-        ]);
+        if (!updated) {
+          safeAppendRow(sheet, [academicYear, recordDate, studentName, amount, organization, note]);
+        }
+      } else {
+        // รูปแบบ 9 คอลัมน์: รหัส, วันที่บันทึก, ปีการศึกษา, ระดับชั้น, ชื่อ-นามสกุลนักเรียน, ยอดเงิน, หน่วยงาน, หมายเหตุ, วันเวลา
+        const values = sheet.getDataRange().getValues();
+        let updated = false;
+        for (let i = 1; i < values.length; i++) {
+          if (values[i][0] == targetId) {
+            sheet.getRange(i + 1, 1, 1, 9).setValues([[
+              targetId, recordDate, academicYear, grade, studentName, amount, organization, note, timestamp
+            ]]);
+            updated = true;
+            break;
+          }
+        }
+        if (!updated) {
+          safeAppendRow(sheet, [
+            targetId, recordDate, academicYear, grade, studentName, amount, organization, note, timestamp
+          ]);
+        }
       }
 
       return ContentService.createTextOutput(JSON.stringify({
@@ -184,9 +203,9 @@ function doPost(e) {
         message: found ? "ลบรายการเรียบร้อยแล้ว" : "ไม่พบรายการที่ต้องการลบ"
       })).setMimeType(ContentService.MimeType.JSON);
 
-    // 2. จัดการข้อมูลนักเรียน (เพิ่มรายบุคคล)
+    // 2. จัดการข้อมูลนักเรียน (เพิ่มรายบุคคล - บันทึกลงฐานข้อมูลนักเรียน)
     } else if (action === "saveStudent") {
-      const sheet = ss.getSheetByName(SHEET_NAMES.STUDENTS);
+      const sheet = getStudentSheet(ss);
       const academicYear = data.academicYear || "2569";
       const grade = data.grade || "";
       const citizenId = data.citizenId || "";
@@ -211,7 +230,6 @@ function doPost(e) {
       }
 
       if (!updated) {
-        // เพิ่มแถวใหม่ พร้อมระบบตรวจสอบและขยายแถวอัตโนมัติหากแถวเต็ม
         safeAppendRow(sheet, [
           academicYear, grade, citizenId, studentCode, name, gender, birthDate, status
         ]);
@@ -224,7 +242,7 @@ function doPost(e) {
 
     // 3. นำเข้าข้อมูลนักเรียนแบบกลุ่มจาก Excel
     } else if (action === "importStudentsBatch") {
-      const sheet = ss.getSheetByName(SHEET_NAMES.STUDENTS);
+      const sheet = getStudentSheet(ss);
       const academicYear = data.academicYear || "2569";
       const studentsList = data.students || [];
 
@@ -246,7 +264,6 @@ function doPost(e) {
         s.status || "เรียนอยู่"
       ]);
 
-      // นำเข้าข้อมูลแบบกลุ่มอย่างปลอดภัย พร้อมขยายแถวอัตโนมัติล่วงหน้า
       safeBatchAppendRows(sheet, rowsToInsert);
 
       return ContentService.createTextOutput(JSON.stringify({
@@ -256,7 +273,7 @@ function doPost(e) {
 
     // 4. ลบข้อมูลนักเรียน
     } else if (action === "deleteStudent") {
-      const sheet = ss.getSheetByName(SHEET_NAMES.STUDENTS);
+      const sheet = getStudentSheet(ss);
       const academicYear = data.academicYear;
       const studentCode = data.studentCode;
       const name = data.name;
@@ -311,14 +328,14 @@ function getSheetData(sheet) {
       if (key === "ปีการศึกษา") key = "academicYear";
       else if (key === "ระดับชั้น" || key === "ชั้น") key = "grade";
       else if (key === "เลขบัตรประชาชน" || key === "เลขประจำตัวประชาชน") key = "citizenId";
-      else if (key === "รหัสประจำตัว" || key === "รหัสนักเรียน" || key === "ID") key = "studentCode";
+      else if (key === "รหัสประจำตัว" || key === "รหัสประจำตัวนักเรียน" || key === "รหัสนักเรียน" || key === "ID") key = "studentCode";
       else if (key === "ชื่อ-นามสกุล" || key === "ชื่อ-นามสกุลนักเรียน" || key === "ชื่อ") key = "name";
       else if (key === "เพศ") key = "gender";
       else if (key === "วันเกิด") key = "birthDate";
       else if (key === "สถานะ") key = "status";
-      else if (key === "วันที่" || key === "วันที่บันทึก") key = "recordDate";
+      else if (key === "วันที่" || key === "วันที่บันทึก" || key === "วันเดือนปี" || key === "วัน/เดือน/ปี") key = "recordDate";
       else if (key === "ยอดเงิน" || key === "จำนวนเงิน" || key === "ยอดเงิน (บาท)") key = "amount";
-      else if (key === "หน่วยงาน" || key === "แหล่งทุน") key = "organization";
+      else if (key === "หน่วยงาน" || key === "หน่วยงานที่มอบ" || key === "แหล่งทุน") key = "organization";
       else if (key === "หมายเหตุ") key = "note";
       else if (key === "วันเวลาบันทึก" || key === "Timestamp") key = "timestamp";
       else if (key === "ตำแหน่ง") key = "position";
