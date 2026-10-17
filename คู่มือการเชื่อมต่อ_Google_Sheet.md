@@ -1,27 +1,31 @@
 # คู่มือการติดตั้งและเชื่อมต่อ Google Sheet
 ## ระบบทุนการศึกษา และจัดการข้อมูลนักเรียน โรงเรียนบ้านสันดาบ
 
-ระบบนี้ถูกออกแบบให้ทำงานร่วมกับ **Google Sheet** และ **Google Drive Folder** ของโรงเรียนบ้านสันดาบ:
+ระบบนี้ถูกออกแบบให้ทำงานร่วมกับ **Google Sheets** และ **Google Drive Folder** ของโรงเรียนบ้านสันดาบ:
 
-- **Google Sheet ID**: `1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI`
-  - ลิงก์ตรง: [เปิด Google Sheet](https://docs.google.com/spreadsheets/d/1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI/edit)
-- **Google Drive Folder ID**: `1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj`
-  - ลิงก์ตรง: [เปิด Google Drive Folder](https://drive.google.com/drive/folders/1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj)
-- **รหัสผ่านบันทึกทุนการศึกษา**: `thunsandab1234`
+1. **Google Sheet ฐานข้อมูลทุนการศึกษา (เดิม - สำหรับบันทึกและอ่านข้อมูลทุน)**:
+   - **Sheet ID**: `1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI`
+   - ลิงก์ตรง: [เปิด Google Sheet ทุนการศึกษา](https://docs.google.com/spreadsheets/d/1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI/edit)
+
+2. **Google Sheet ฐานข้อมูลนักเรียน (ใหม่ - สำหรับดึงข้อมูลชื่อ-นามสกุล, ระดับชั้น ฯลฯ)**:
+   - **Sheet ID**: `1jqxY-MFf26KpYpYR2J6Lq0FBOp7HS-fe58sSWAOBnsA`
+   - ลิงก์ตรง: [เปิด Google Sheet ข้อมูลนักเรียน](https://docs.google.com/spreadsheets/d/1jqxY-MFf26KpYpYR2J6Lq0FBOp7HS-fe58sSWAOBnsA/edit)
+
+3. **Google Drive Folder ID**: `1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj`
+   - ลิงก์ตรง: [เปิด Google Drive Folder](https://drive.google.com/drive/folders/1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj)
+4. **รหัสผ่านบันทึกทุนการศึกษา**: `thunsandab1234`
 
 ---
 
-### โครงสร้างชีตข้อมูลใน Google Sheet
+### โครงสร้างชีตข้อมูล
 
-1. **Sheet: `Scholarships` (ประวัติการรับทุนการศึกษา)**
-   - คอลัมน์: `รหัส`, `วันที่บันทึก`, `ปีการศึกษา`, `ระดับชั้น`, `ชื่อ-นามสกุลนักเรียน`, `ยอดเงิน (บาท)`, `หน่วยงาน`, `หมายเหตุ`, `วันเวลาบันทึก`
+1. **ฐานข้อมูลทุนการศึกษา (`1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI`)**:
+   - **Sheet: `Scholarships` (ประวัติการรับทุนการศึกษา)**: บันทึกข้อมูลปีการศึกษา, วันเดือนปี, ชื่อ-นามสกุลนักเรียน, จำนวนเงิน, หน่วยงานที่มอบ, หมายเหตุ
+   - **Sheet: `Teachers` (ฐานข้อมูลครู)**: รหัสครู, ชื่อ-นามสกุล, ตำแหน่ง, กลุ่มสาระ, เบอร์โทรศัพท์
 
-2. **Sheet: `Students` (จัดการข้อมูลนักเรียน - รายปีการศึกษา)**
-   - คอลัมน์ตามภาพ: `ปีการศึกษา`, `ระดับชั้น`, `เลขบัตรประชาชน`, `รหัสประจำตัว`, `ชื่อ-นามสกุล`, `เพศ`, `วันเกิด`, `สถานะ`
-   - เมื่อเปลี่ยนปีการศึกษา ระบบจะดึงและกรองเฉพาะนักเรียนในปีการศึกษานั้น ๆ โดยอัตโนมัติ
-
-3. **Sheet: `Teachers` (ฐานข้อมูลครู)**
-   - คอลัมน์: `รหัสครู`, `ชื่อ-นามสกุล`, `ตำแหน่ง`, `กลุ่มสาระ`, `เบอร์โทรศัพท์`
+2. **ฐานข้อมูลนักเรียน (`1jqxY-MFf26KpYpYR2J6Lq0FBOp7HS-fe58sSWAOBnsA`)**:
+   - **Sheet: `Students` (รายชื่อนักเรียน)**: ปีการศึกษา, ระดับชั้น, เลขบัตรประชาชน, รหัสประจำตัวนักเรียน, ชื่อ-นามสกุล, เพศ, วันเกิด, สถานะ
+   - ระบบจะดึงรายชื่อและระดับชั้นของนักเรียนจากชีตนี้มาแสดงในตัวเลือก (Dropdown) ค้นหา และแบบฟอร์มบันทึกทุนโดยอัตโนมัติ
 
 ---
 
