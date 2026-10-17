@@ -45,11 +45,26 @@ function doGet(e) {
     let result = {};
 
     if (action === "getAllData") {
+      const studentsData = getSheetData(studentSheet);
+      const scholarshipsData = getSheetData(ss.getSheetByName(SHEET_NAMES.SCHOLARSHIPS)).map(sch => {
+        const studentName = sch.studentName || sch.name || "";
+        let grade = sch.grade || "";
+        if (!grade && studentName) {
+          const match = studentsData.find(st => st.name === studentName);
+          if (match && match.grade) grade = match.grade;
+        }
+        return {
+          ...sch,
+          studentName,
+          grade
+        };
+      });
+
       result = {
         status: "success",
-        students: getSheetData(studentSheet),
+        students: studentsData,
         teachers: getSheetData(ss.getSheetByName(SHEET_NAMES.TEACHERS)),
-        scholarships: getSheetData(ss.getSheetByName(SHEET_NAMES.SCHOLARSHIPS)),
+        scholarships: scholarshipsData,
         sheetId: SPREADSHEET_ID,
         studentsSheetId: STUDENTS_SPREADSHEET_ID,
         folderId: FOLDER_ID
@@ -69,9 +84,24 @@ function doGet(e) {
         teachers: getSheetData(ss.getSheetByName(SHEET_NAMES.TEACHERS))
       };
     } else if (action === "getScholarships") {
+      const studentsData = getSheetData(studentSheet);
+      const scholarshipsData = getSheetData(ss.getSheetByName(SHEET_NAMES.SCHOLARSHIPS)).map(sch => {
+        const studentName = sch.studentName || sch.name || "";
+        let grade = sch.grade || "";
+        if (!grade && studentName) {
+          const match = studentsData.find(st => st.name === studentName);
+          if (match && match.grade) grade = match.grade;
+        }
+        return {
+          ...sch,
+          studentName,
+          grade
+        };
+      });
+
       result = {
         status: "success",
-        scholarships: getSheetData(ss.getSheetByName(SHEET_NAMES.SCHOLARSHIPS))
+        scholarships: scholarshipsData
       };
     } else {
       result = { status: "error", message: "Action ไม่ถูกต้อง" };
@@ -324,12 +354,15 @@ function getSheetData(sheet) {
     const obj = {};
     headers.forEach((header, i) => {
       let key = header.toString().trim();
+      let isStudentName = false;
+
       // map standard keys
       if (key === "ปีการศึกษา") key = "academicYear";
       else if (key === "ระดับชั้น" || key === "ชั้น") key = "grade";
       else if (key === "เลขบัตรประชาชน" || key === "เลขประจำตัวประชาชน") key = "citizenId";
       else if (key === "รหัสประจำตัว" || key === "รหัสประจำตัวนักเรียน" || key === "รหัสนักเรียน" || key === "ID") key = "studentCode";
-      else if (key === "ชื่อ-นามสกุล" || key === "ชื่อ-นามสกุลนักเรียน" || key === "ชื่อ") key = "name";
+      else if (key === "ชื่อ-นามสกุล" || key === "ชื่อ") key = "name";
+      else if (key === "ชื่อ-นามสกุลนักเรียน") { key = "name"; isStudentName = true; }
       else if (key === "เพศ") key = "gender";
       else if (key === "วันเกิด") key = "birthDate";
       else if (key === "สถานะ") key = "status";
@@ -346,7 +379,19 @@ function getSheetData(sheet) {
       if (val instanceof Date) {
         val = Utilities.formatDate(val, "Asia/Bangkok", "yyyy-MM-dd");
       }
+
+      // ป้องกันไม่ให้คอลัมน์วันที่ถูกเข้าใจผิดว่าเป็นระดับชั้น
+      if (key === "grade") {
+        const valStr = String(val || "").trim();
+        if (/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(valStr) || /^\d{4}-\d{2}-\d{2}$/.test(valStr)) {
+          return; // ข้าม ไม่บันทึกวันที่เป็นระดับชั้น
+        }
+      }
+
       obj[key] = val;
+      if (isStudentName) {
+        obj.studentName = val;
+      }
     });
     return obj;
   });
