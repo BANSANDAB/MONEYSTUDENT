@@ -13,13 +13,17 @@
 
 // Configuration Constants
 const CONFIG = {
+  // ฐานข้อมูลเดิมสำหรับบันทึกข้อมูลทุนการศึกษา
   SHEET_ID: "1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI",
+  // ฐานข้อมูลสำหรับดึงข้อมูลนักเรียน (ชื่อ-นามสกุล, ระดับชั้น ฯลฯ)
+  STUDENTS_SHEET_ID: "1jqxY-MFf26KpYpYR2J6Lq0FBOp7HS-fe58sSWAOBnsA",
   FOLDER_ID: "1cHaDYk8XORmfsgwSQo_3W1TAKRN0sKSj",
   PASSWORD: "thunsandab1234",
   STORAGE_KEYS: {
     API_URL: "sandab_api_url",
     SCHOLARSHIPS: "sandab_scholarships_db",
-    STUDENTS: "sandab_students_db"
+    STUDENTS: "sandab_students_db",
+    STUDENTS_SHEET_ID: "sandab_students_sheet_id"
   }
 };
 
@@ -180,6 +184,15 @@ async function loadDatabase() {
   // 1. Try loading cached data from localStorage first
   const cachedScholarships = localStorage.getItem(CONFIG.STORAGE_KEYS.SCHOLARSHIPS);
   const cachedStudents = localStorage.getItem(CONFIG.STORAGE_KEYS.STUDENTS);
+  const cachedStudentsSheetId = localStorage.getItem(CONFIG.STORAGE_KEYS.STUDENTS_SHEET_ID);
+
+  // ตรวจสอบว่าเคยแคชข้อมูลนักเรียนจาก Sheet ID นี้หรือไม่ ถ้าเปลี่ยน Sheet ID ให้ล้างแคชเก่าออก
+  if (cachedStudentsSheetId && cachedStudentsSheetId !== CONFIG.STUDENTS_SHEET_ID) {
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.STUDENTS);
+    state.students = [];
+  } else if (cachedStudents) {
+    try { state.students = JSON.parse(cachedStudents); } catch (e) {}
+  }
 
   if (cachedScholarships) {
     try { 
@@ -189,40 +202,54 @@ async function loadDatabase() {
       })); 
     } catch (e) {}
   }
-  if (cachedStudents) {
-    try { state.students = JSON.parse(cachedStudents); } catch (e) {}
-  }
 
   updateAcademicYearHeader();
   populateGradeDropdowns();
   applyFilters();
 
   // 2. Fetch live database directly from Google Sheet ID via Google Visualization API
-  showToast("กำลังดึงข้อมูลจริงจากฐานข้อมูล Google Sheet...", "info");
+  showToast("กำลังดึงข้อมูลนักเรียนและประวัติทุนจาก Google Sheet...", "info");
   await fetchAllFromGoogleSheet();
 }
 
 /**
  * Fetch Real Data from Google Sheets using GViz API
+ * - ข้อมูลนักเรียน: ดึงจาก STUDENTS_SHEET_ID (1jqxY-MFf26KpYpYR2J6Lq0FBOp7HS-fe58sSWAOBnsA)
+ * - ข้อมูลทุนการศึกษา: ดึงและบันทึกลง SHEET_ID เดิม (1ABtqJTeh7AOBsk0RZJMKBhbUW_anBXV0tzdryFuousI)
  */
 async function fetchAllFromGoogleSheet() {
   try {
     let hasLoadedAny = false;
 
-    // 1. ดึงข้อมูลนักเรียนจาก Sheet=Students
-    const studentsUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=Students`;
-    const resStudents = await fetch(studentsUrl);
-    if (resStudents.ok) {
+    // 1. ดึงข้อมูลนักเรียน (ชื่อ-นามสกุล, ระดับชั้น ฯลฯ) จาก Google Sheet ข้อมูลนักเรียน
+    const studentsUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.STUDENTS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Students`;
+    let resStudents = null;
+    try {
+      resStudents = await fetch(studentsUrl);
+      if (!resStudents.ok) {
+        resStudents = await fetch(`https://docs.google.com/spreadsheets/d/${CONFIG.STUDENTS_SHEET_ID}/gviz/tq?tqx=out:json`);
+      }
+    } catch (errStudentsFetch) {
+      console.warn("Direct sheet=Students fetch error, attempting default tab:", errStudentsFetch);
+      try {
+        resStudents = await fetch(`https://docs.google.com/spreadsheets/d/${CONFIG.STUDENTS_SHEET_ID}/gviz/tq?tqx=out:json`);
+      } catch (e2) {
+        console.warn("GViz student fetch failed:", e2);
+      }
+    }
+
+    if (resStudents && resStudents.ok) {
       const text = await resStudents.text();
       const parsedStudents = parseGVizStudents(text);
       if (parsedStudents && parsedStudents.length > 0) {
         state.students = parsedStudents;
         localStorage.setItem(CONFIG.STORAGE_KEYS.STUDENTS, JSON.stringify(state.students));
+        localStorage.setItem(CONFIG.STORAGE_KEYS.STUDENTS_SHEET_ID, CONFIG.STUDENTS_SHEET_ID);
         hasLoadedAny = true;
       }
     }
 
-    // 2. ดึงข้อมูลทุนการศึกษาจาก Sheet=Scholarships
+    // 2. ดึงข้อมูลทุนการศึกษาจาก Google Sheet ฐานข้อมูลเดิม (Sheet=Scholarships)
     const scholarshipsUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=Scholarships`;
     const resScholarships = await fetch(scholarshipsUrl);
     if (resScholarships.ok) {
@@ -259,7 +286,7 @@ async function fetchAllFromGoogleSheet() {
 }
 
 /**
- * Parse GViz response for Students
+ * Parse GViz response for Students (รองรับคอลัมน์ชื่อ-นามสกุล, ระดับชั้น, รหัส, วันเกิด ฯลฯ)
  */
 function parseGVizStudents(rawText) {
   try {
@@ -269,19 +296,51 @@ function parseGVizStudents(rawText) {
     const json = JSON.parse(rawText.substring(start, end + 1));
     if (!json.table || !json.table.rows) return [];
 
+    // ระบุ index คอลัมน์โดยอัตโนมัติตาม Label หากมี หรือ fallback ตามลำดับมาตรฐาน
+    const colMap = {
+      academicYear: 0,
+      grade: 1,
+      citizenId: 2,
+      studentCode: 3,
+      name: 4,
+      gender: 5,
+      birthDate: 6,
+      status: 7
+    };
+
+    if (json.table.cols && json.table.cols.length > 0) {
+      json.table.cols.forEach((col, idx) => {
+        const lbl = (col.label || "").trim();
+        if (/ปีการศึกษา/i.test(lbl)) colMap.academicYear = idx;
+        else if (/ระดับชั้น|ชั้น/i.test(lbl)) colMap.grade = idx;
+        else if (/บัตรประชาชน/i.test(lbl)) colMap.citizenId = idx;
+        else if (/รหัสประจำตัว|รหัสนักเรียน/i.test(lbl)) colMap.studentCode = idx;
+        else if (/ชื่อ-นามสกุล|ชื่อ/i.test(lbl)) colMap.name = idx;
+        else if (/เพศ/i.test(lbl)) colMap.gender = idx;
+        else if (/วันเกิด/i.test(lbl)) colMap.birthDate = idx;
+        else if (/สถานะ/i.test(lbl)) colMap.status = idx;
+      });
+    }
+
     return json.table.rows.map(row => {
       const c = row.c || [];
-      const getVal = idx => (c[idx] ? (c[idx].f !== undefined ? c[idx].f : c[idx].v) : "");
+      const getVal = idx => {
+        if (!c[idx]) return "";
+        if (c[idx].f !== undefined && c[idx].f !== null) return String(c[idx].f).trim();
+        if (c[idx].v !== undefined && c[idx].v !== null) return String(c[idx].v).trim();
+        return "";
+      };
 
+      const name = getVal(colMap.name);
       return {
-        academicYear: String(getVal(0) || "2569").trim(),
-        grade: String(getVal(1) || "").trim(),
-        citizenId: String(getVal(2) || "").trim(),
-        studentCode: String(getVal(3) || "").trim(),
-        name: String(getVal(4) || "").trim(),
-        gender: String(getVal(5) || "ชาย").trim(),
-        birthDate: String(getVal(6) || "").trim(),
-        status: String(getVal(7) || "เรียนอยู่").trim()
+        academicYear: getVal(colMap.academicYear) || "2569",
+        grade: getVal(colMap.grade),
+        citizenId: getVal(colMap.citizenId),
+        studentCode: getVal(colMap.studentCode),
+        name: name,
+        gender: getVal(colMap.gender) || "ชาย",
+        birthDate: getVal(colMap.birthDate),
+        status: getVal(colMap.status) || "เรียนอยู่"
       };
     }).filter(s => s.name && s.name.length > 0);
   } catch (e) {
